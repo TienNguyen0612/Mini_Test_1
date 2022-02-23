@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>
+        Product
+    </title>
+    <style th:replace="/layout :: css"></style>
+</head>
+<body>
+<h2 th:class="notify" th:if="${message} != null">
+    <span th:text="${message}"></span>
+</h2>
+<form id="form" th:action="@{/product/{id}(id=${product.getId()})}" th:object="${product}" method="post" enctype="multipart/form-data">
+    <label>Name:
+        <input type="text" name="name" th:field="*{name}" >
+    </label>
+    <label>Price:
+        <input type="text" name="price" th:field="*{price}">
+    </label>
+    <label>Description:
+        <input type="text" name="description" th:field="*{description}">
+    </label>
+    <!--    <label hidden>-->
+    <!--        <input type="text" name="imageFile" th:field="*{imageFile}">-->
+    <!--    </label>-->
+    <label>Image:
+        <img th:src="@{${file} + *{imageUrl}}" alt="Lỗi">
+        <input type="file" name="imageFile" th:field="*{imageFile}">
+    </label>
+    <br>
+    <br>
+    <button type="submit">Submit</button>
+</form>
+<p><a th:href="@{/product}">Back to list</a></p>
+<footer th:replace="/layout :: footer"></footer>
+</body>
+</html>
