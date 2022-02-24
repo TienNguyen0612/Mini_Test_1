@@ -1,89 +1,52 @@
 package codegym.repository;
 
 import codegym.model.Product;
-import org.hibernate.HibernateException;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
-import org.hibernate.cfg.Configuration;
-import org.springframework.stereotype.Repository;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import javax.transaction.Transactional;
 import java.util.ArrayList;
 
-@Repository
+@Transactional
 public class ProductRepositoryImpl implements IProductRepository {
-    private static SessionFactory sessionFactory;
-    private static EntityManager entityManager;
-
-    static {
-        try {
-            sessionFactory = new Configuration().configure("hibernate.conf.xml").buildSessionFactory();
-            entityManager = sessionFactory.createEntityManager();
-        } catch (HibernateException e) {
-            e.printStackTrace();
-        }
-    }
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     public ArrayList<Product> getAllProducts() {
-        String queryStr = "SELECT p FROM Product AS p";
-        TypedQuery<Product> query = entityManager.createQuery(queryStr, Product.class);
+        TypedQuery<Product> query = entityManager.createQuery("select p from Product p", Product.class);
         return (ArrayList<Product>) query.getResultList();
     }
 
     @Override
     public Product saveProduct(Product product) {
-        Transaction transaction = null;
-        Product origin;
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            if (product.getId() != 0) {
-                origin = findById(product.getId());
-                origin.setName(product.getName());
-                origin.setPrice(product.getPrice());
-                origin.setDescription(product.getDescription());
-                origin.setImageUrl(product.getImageUrl());
-            } else {
-                origin = product;
-            }
-            session.saveOrUpdate(origin);
-            transaction.commit();
-            return origin;
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (transaction != null) {
-                transaction.rollback();
-            }
+        if (product.getId() != 0) {
+           return entityManager.merge(product);
+        } else {
+            entityManager.persist(product);
+            return product;
         }
-        return null;
     }
 
     @Override
     public void deleteProduct(int id) {
-        Transaction transaction = null;
-        Product origin = findById(id);
-        try (Session session = sessionFactory.openSession()) {
-            transaction = session.beginTransaction();
-            if (origin != null) {
-                session.delete(origin);
-            }
-            transaction.commit();
-        } catch (Exception e) {
-            e.printStackTrace();
-            if (transaction != null) {
-                transaction.rollback();
-            }
+        Product product = findById(id);
+        if (product != null) {
+            entityManager.remove(product);
         }
     }
 
     @Override
     public Product findById(int id) {
-        String queryStr = "SELECT p FROM Product AS p WHERE p.id = :id";
-        TypedQuery<Product> query = entityManager.createQuery(queryStr, Product.class);
+        TypedQuery<Product> query = entityManager.createQuery("select p from Product p where p.id = :id", Product.class);
         query.setParameter("id", id);
-        return query.getSingleResult();
+        try {
+            return query.getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        }
     }
 
     @Override
